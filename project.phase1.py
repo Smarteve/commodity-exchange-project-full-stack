@@ -1,28 +1,21 @@
-'''
-four main dictionaries to store data
-1 exchange_dict = {} main exchange dict with key exchange name, value exchange object 
-2 commodity_dict= {} main commodity dict with key commodity name, value commodity object
-3 self.exchanges under Commodity class,  self.commodities under Exchange class for reference to each other.
-when delete exchange and commodity needs to delete both main dict and reference dict.
-4 price object is stored in self.price under Commodity class as a child-parent relationship 
-
-'''
 
 
-from datetime import datetime
+from datetime import datetime,date
 exchange_dict = {} # key exchange name, value exchange object 
 commodity_dict= {} # key commodity name, value commodity object
 
 class Exchange:
-    def __init__(self,name,description):
+    def __init__(self,name,description,currency_sign):
         self.name = name
         self.description = description
-        self.commodities = {}   # put self.commodities as a dictionary, key is commodity name, value commodity object
+        self.currency_sign = currency_sign
+        self.commodities = [] # a list of commodity names
+        
   
     def __str__(self):
         if self.commodities: # when add exchange, only requires administrator to add name and intro first, if no commodities at first then dont display
             return f"{self.name} is {self.description}."\
-            f"The list of the commodities currently trading in {self.name} is {','.join(self.commodities.keys())}."
+            f"The list of the commodities currently trading in {self.name} is {','.join(self.commodities)}."
         else:
             return f"{self.name} is {self.description}."
 
@@ -30,17 +23,21 @@ class Commodity:
     def __init__(self,name,unit):
         self.name = name 
         self.unit = unit  
-        self.exchanges = {} # key exchange name, value exchange object 
-        self.price = {} # key exchange name, value price object 
-       
+        self.exchanges = [] # a list of exchange names
+        self.price = {} # key price object, value exchange name    
 
     def __str__(self):
-        price_strings = [str(price_instance) for price_instance in self.price.values()]
-        last_traded = max(self.price.values(), key = lambda price: price.time)
-        return f"{self.name} is traded at {','.join(self.exchanges.keys())}.\n"\
-        f"It is last traded at {str(last_traded)} per {self.unit}.\n"\
-        f"The full trading info is {','.join(price_strings)}."
-
+        all_prices = list(self.price.keys())
+        last_traded_price = max(all_prices, key = lambda price: price.time)
+        last_traded_exchange = self.price[last_traded_price]
+        currency_sign = exchange_dict[last_traded_exchange].currency_sign
+        info = []
+        info.append(f"{self.name} is traded at {','.join(self.exchanges)}.")
+        info.append(f"It is last traded at {currency_sign}{last_traded_price.value} in {last_traded_exchange} per {self.unit}.")
+        info.append(f"The full trading info is:")
+        for price in all_prices:
+            info.append(str(price))
+        return "\n".join(info)
     
 class Price:
     def __init__(self,commodity,exchange,time,value):
@@ -48,49 +45,52 @@ class Price:
         self.exchange = exchange
         self.time = time
         self.value = value
-                            
+       
     def __str__(self):
-        return f"{self.value} at {self.exchange} at {self.time}"
+        currency_sign = exchange_dict[self.exchange].currency_sign
+        return f"{currency_sign}{self.value} at {self.exchange} at {self.time}"
 
+    
 def parse_time(time):
     time_object = datetime.strptime(time,"%Y-%m-%d")
-    return time_object
+    return time_object.date()  # print only date
 
-def add_exchange(name,description):
+def add_exchange(name,description,currency_sign):
     if name in exchange_dict:
         print("exchange already existed, add a new exchange")
         return
     else:
-        new_exchange = Exchange(name,description)
+        new_exchange = Exchange(name,description,currency_sign)
         exchange_dict[name] = new_exchange
 
 def add_commodity():
-    while True:
-            commodity_name = input("What is the name of the commodity you want to add? ")
-            if commodity_name in commodity_dict:
-                print(f"{commodity_name} already existed, pls enter a new commodity")
-            else:
-                break        
+    commodity_name = input("What is the name of the commodity you want to add? ")
+    #check if commodity exist
+    if commodity_name in commodity_dict:
+        print(f"{commodity_name} already existed, pls enter a new commodity")
+        return    
     unit = input("What is the unit of the commodity? ")
-    commodity_instance = Commodity(commodity_name,unit)
+    new_commodity = Commodity(commodity_name,unit)
+    # check if all exchanges are added first
     exchange_name = input(f"what is the exchange {commodity_name} is traded at(comma separated if multiple): ")
     missing_exchanges = []
     exchange_list = exchange_name.split(",")
-    for item in exchange_list:
-            if item not in exchange_dict:
-                missing_exchanges.append(item)
+    for exchange in exchange_list:
+            if exchange not in exchange_dict:
+                missing_exchanges.append(exchange)
     if missing_exchanges:
         print(f"{','.join(missing_exchanges)} not in exchange system, pls add exchange first")
         return
-    for item in exchange_list:       
-        commodity_instance.exchanges[item] = exchange_dict[item]
-        time = input(f"Enter the last traded time in {item}(yyyy-mm-dd): ")
+    # add exchange, price
+    for exchange in exchange_list:       
+        new_commodity.exchanges.append(exchange)
+        time = input(f"Enter the last traded time in {exchange}(yyyy-mm-dd): ")
         formatted_time = parse_time(time)
-        price = float(input(f"Enter the price of last trade in {item}: "))
-        price_instance = Price(commodity_name,item,formatted_time,price)
-        commodity_instance.price[item] = price_instance #update self.price dictionary under Commodity class
-        exchange_dict[item].commodities[commodity_name] = commodity_instance # update self.commodities under Exchange class
-        commodity_dict[commodity_name] = commodity_instance # update main commodity dic
+        price = float(input(f"Enter the price of last trade in {exchange}: "))
+        new_price = Price(commodity_name,exchange,formatted_time,price)
+        new_commodity.price[new_price] = exchange #update self.price dictionary under Commodity class
+        exchange_dict[exchange].commodities.append(commodity_name)# update self.commodities under Exchange class
+    commodity_dict[commodity_name] = new_commodity # update main commodity dic
     print(f"Thanks for adding {commodity_name}")
 
 def view_exchange(name):
@@ -98,35 +98,27 @@ def view_exchange(name):
 
 def view_commodity(name): 
     print(commodity_dict[name]) if name in commodity_dict else print('commodity not found')
-    # list comprehension 
-    # get commodity object from commodity_dict 
 
 def remove_exchange(name):
-    # delete two things, delete from exchange main dic, and self.exchange dict from Commodity class
+    #delete from exchange main dic 
     if name in exchange_dict:
         del exchange_dict[name]
-        for commodity_obj in commodity_dict.values():
-            if name in commodity_obj.exchanges:
-                del commodity_obj.exchanges[name]
         print(f"{name} has been removed from exchanges")
     else:
         print("exchange not found")
 
 def remove_commodity(name): 
-    # delete two things, the main commodity dict, and self.commodity dict from Exchange class 
+    # delete from the main commodity dict 
     if name in commodity_dict:
         del commodity_dict[name]
-        for exchange_instance in exchange_dict.values():
-            if name in exchange_instance.commodities:
-                del exchange_instance.commodities[name]
         print(f"{name} has been removed from commodities")
     else:
         print("commodity not found")
 
 
 
-add_exchange("TOMO","Japan's largest commodity futures exchanges")
-print("Welcome user")
+add_exchange("TOMO","Japan's largest commodity futures exchanges","¥")
+print("Welcome, treasure hunters")
 while True:
     print("-----")
     print("choose your action: ")
@@ -142,10 +134,13 @@ while True:
     if action == "1":
         exchange_name = input("What's the name of the exchange you want to add? ")
         description= input(f"What's the descripition of the exchange? {exchange_name} is: ")
-        add_exchange(exchange_name,description)
+        currency_sign =  input(f"what's the primary currency of the exchange? choose from ¥,$,£ and yuan: ")
+        add_exchange(exchange_name,description,currency_sign)
         print(f"Thanks for adding {exchange_name}")
+
     if action == "2":
         add_commodity()
+
     if action == "3":
         commodity_name = input("Which exchange do you want to view? ")
         view_exchange(commodity_name)
@@ -160,6 +155,7 @@ while True:
         remove_commodity(commodity_name)
     if action == "7":
         break 
+
 
 
 
