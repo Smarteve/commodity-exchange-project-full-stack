@@ -16,6 +16,7 @@ class AddingCommodityTest(unittest.TestCase):
     def test_missing_exchange_list(self):
         self.assertEqual(_missing_exchanges_list(["TOMO"]),[])
         self.assertEqual(_missing_exchanges_list(["TOMO","NYSE"]),["NYSE"])
+
     @patch('builtins.input',side_effect = ["2023-10-01", "1500"])
     def test_add_commodity_to_system(self,mock_input):
         _add_commodity_to_system("gold","ounce",["TOMO"])
