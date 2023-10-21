@@ -1,10 +1,10 @@
-
+from typing import Dict,List 
 from datetime import datetime,date
-exchange_dict = {} # key exchange name, value exchange object 
-commodity_dict= {} # key commodity name, value commodity object
+exchange_dict: Dict[str,"Exchange"] = {} # key exchange name, value exchange object 
+commodity_dict: Dict[str,"Commodity"] = {} # key commodity name, value commodity object
 
 class Exchange:
-    def __init__(self,name,description,currency_sign):
+    def __init__(self,name: str,description: str,currency_sign: str):
         self.name = name
         self.description = description
         self.currency_sign = currency_sign
@@ -17,7 +17,7 @@ class Exchange:
             return f"{self.name} is {self.description}."
 
 class Commodity:
-    def __init__(self,name,unit):
+    def __init__(self,name: str,unit: str):
         self.name = name 
         self.unit = unit  
         self.exchanges = [] # a list of exchange names
@@ -37,7 +37,7 @@ class Commodity:
         return "\n".join(info)
    
 class Price:
-    def __init__(self,commodity,exchange,time,value):
+    def __init__(self,commodity:str,exchange:str,time:date,value:float):
         self.commodity = commodity 
         self.exchange = exchange
         self.time = time
@@ -48,14 +48,17 @@ class Price:
         return f"{currency_sign}{self.value} at {self.exchange} at {self.time}"
     
 # a list of private functions
-def _parse_time(time):
+def _parse_time(time) -> date:
     time_object = datetime.strptime(time,"%Y-%m-%d")
     return time_object.date()  # print only date
-def _commodity_exists(commodity_name):
+
+def _commodity_exists(commodity_name:str) -> bool:
     return commodity_name in commodity_dict
-def _missing_exchanges_list(exchange_list):
+
+def _missing_exchanges_list(exchange_list: List[str]) -> List[str]:
     return [exchange for exchange in exchange_list if exchange not in exchange_dict]
-def _add_commodity_to_system(commodity_name,unit,exchange_list):
+
+def _add_commodity_to_system(commodity_name:str,unit:str,exchange_list:List[str]) -> None:
     new_commodity = Commodity(commodity_name,unit)
     for exchange in exchange_list:       
         new_commodity.exchanges.append(exchange)
@@ -108,7 +111,7 @@ def remove_exchange(name):
         print(f"{name} has been removed from exchanges")
     else:
         print("exchange not found")
-
+        
 def remove_commodity(name): 
     # delete from the main commodity dict 
     if name in commodity_dict:
@@ -118,7 +121,7 @@ def remove_commodity(name):
         print("commodity not found")
 
 
-#main code
+
 add_exchange("TOMO","Japan's largest commodity futures exchanges","¥")
 print("Welcome")
 while True:
@@ -139,6 +142,7 @@ while True:
         currency_sign =  input(f"what's the primary currency of the exchange? choose from ¥,$,£ and yuan: ")
         add_exchange(exchange_name,description,currency_sign)
         print(f"Thanks for adding {exchange_name}")
+
     if action == "2":
         add_commodity()
     if action == "3":
