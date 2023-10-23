@@ -3,18 +3,15 @@ update2
 
 1 put global variable of the main exchange_dict and commodity_dict into Main class, avoid using global variable 
 2 avoid having input in class, separate input from class and put down in actions  
+3 avoid directly access class attributes, having separate function to get class attributes
 3 having clean class, avoid trivial things such as split and .join in a class, bundle it in private functions, separate public and private functions 
 4 decompose add_commodity funtion into add commodity and add price
 5 add type hints, add exceptions
 
 '''
 
-from typing import Dict,List 
+from typing import Dict
 from datetime import datetime,date
-#exchange_dict: Dict[str,"Exchange"] = {} # key exchange name, value exchange object 
-#commodity_dict: Dict[str,"Commodity"] = {} # key commodity name, value commodity object
-
-
 
 class Main:
     def __init__(self):
@@ -29,11 +26,11 @@ class Main:
             new_exchange = Exchange(name,description,currency_sign)
             self.exchange_dict[name] = new_exchange
 
-    def add_commodity(self, commodity: "Commodity") -> None: 
+    def add_commodity(self,commodity:"Commodity") -> None: 
         #check if commodity exist
         if commodity.name in self.commodity_dict:
             raise ValueError(f"{commodity.name} already existed, pls enter a new commodity")
-        self.commodity_dict[commodity.name] = new_commodity
+        self.commodity_dict[commodity.name] = commodity
          
     def _missing_exchanges_list(self,exchange_list: list[str]) -> list[str]:
         return [exchange for exchange in exchange_list if exchange not in self.exchange_dict]
@@ -48,21 +45,34 @@ class Main:
         #delete from exchange main dic 
         if name in self.exchange_dict:
             del self.exchange_dict[name]
-            print(f"{name} has been removed from exchanges")
         else:
             print("exchange not found")
+        #delete from commodity.prices
+        for commodity in list(self.commodity_dict.values()):
+            for price in commodity.prices:
+                if price.exchange.name == name:
+                    commodity.prices.remove(price)
+        print(f"{name} has been removed from exchanges")
+        
             
     def remove_commodity(self,name:str) -> None: 
         # delete from the main commodity dict 
         if name in self.commodity_dict:
-            del self.commodity_dict[name]
-            print(f"{name} has been removed from commodities")
+            del self.commodity_dict[name]     
         else:
             print("commodity not found")
+        # delete from exchange.commodity list
+        for exchange in list(self.exchange_dict.values()):
+            for commodity in exchange.commodities:
+                if commodity == name:
+                    exchange.commodities.remove(commodity)
+        print(f"{name} has been removed from commodities")
 
     def get_exchange(self, name: str) -> "Exchange":
         return self.exchange_dict[name]
-
+    def get_commodity(self,name: str) -> "Commodity":
+        return self.commodity_dict[name]
+    
 
 def _parse_time(time) -> date:
     time_object = datetime.strptime(time,"%Y-%m-%d")
@@ -81,19 +91,24 @@ class Exchange:
             f"The list of the commodities currently trading in {self.name} is {','.join(self.commodities)}."
         else:
             return f"{self.name} is {self.description}."
+    def add_commodity(self,name:str) -> None:
+        self.commodities.append(name)
 
 class Commodity:
-    def __init__(self,name: str,unit: str):
+    def __init__(self,name: str,unit: str,prices:list["Price"]):
         self.name = name 
         self.unit = unit  
-        self.prices: list["Price"] = []
+        self.prices: list["Price"] = prices
+    
+    def _get_exchange_list(self) -> list[str]:
+        return [price.exchange.name for price in self.prices]
 
     def __str__(self):
         last_traded_price = max(self.prices, key = lambda price: price.time)
         last_traded_exchange = last_traded_price.exchange
         currency_sign = last_traded_exchange.currency_sign
         info = []
-        info.append(f"{self.name} is traded at {','.join(self.exchanges)}.")
+        info.append(f"{self.name} is traded at {','.join(self._get_exchange_list())}.")
         info.append(f"It is last traded at {currency_sign}{last_traded_price.value} in {last_traded_exchange.name} per {self.unit}.")
         info.append(f"The full trading info is:")
         for price in self.prices:
@@ -143,30 +158,19 @@ if __name__ == '__main__':
             prices = []
 
             if missing_exchanges := main._missing_exchanges_list(exchange_list):
-                print(f"Missing exchanges: {missing_exchanges}")
+                print(f"Missing exchanges: {','.join(missing_exchanges)},pls add missing exchange first")
                 continue
 
             for exchange in exchange_list:
                 time = _parse_time(input(f"Enter the last traded time in {exchange}(yyyy-mm-dd): "))
                 price = float(input(f"Enter the price of last trade in {exchange}: "))
                 prices.append(Price(main.get_exchange(exchange), time, price))
-
             try:
-                new_commodity = main.add_commodity(Commodity(commodity_name, unit, prices))
+                main.add_commodity(Commodity(commodity_name, unit,prices))
             except ValueError as e:
                 print(e)
                 continue
-
-            #add price to the commodity 
-            for exchange in exchange_list:       
-                new_commodity.exchanges.append(exchange) # add exchange to commodity function **
-                time = input(f"Enter the last traded time in {exchange}(yyyy-mm-dd): ")
-                formatted_time = _parse_time(time)
-                price = float(input(f"Enter the price of last trade in {exchange}: "))
-            new_price = Price(main.exchange_dict[exchange],formatted_time,price)
-            new_commodity.prices.append(new_price) #update self.price dictionary under Commodity class
-            main.exchange_dict[exchange].commodities.append(commodity_name)# update self.commodities under Exchange class
-            main.commodity_dict[commodity_name] = new_commodity # update main commodity dic
+            main.get_exchange(exchange).add_commodity(commodity_name)# update self.commodities under Exchange class
             print(f"Thanks for adding {commodity_name}")
 
         if action == "3":
