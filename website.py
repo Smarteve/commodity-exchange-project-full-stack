@@ -66,6 +66,15 @@ class SelectExchange:
     def GET(self):
         exchange_list = get_exchange_list()
         return render.select_exchange_html(exchange_list)
+    
+class SelectAssetType:
+    def GET(self):
+        data = web.input()
+        exchange = data.exchange
+        asset_types = ["commodity","currency"]
+        return render.select_asset_type_template(exchange, asset_types)
+class SelectAsset:
+    
 
 
 if __name__ == "__main__":
