@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime, date
+from collections import defaultdict
 from exceptions import DuplicateError, NotFoundError
 
 
@@ -12,7 +13,6 @@ def get_db_connection(db_path=DB_FILE):
 
 CONN = get_db_connection()
 CONN.row_factory = sqlite3.Row  # return a dict like row object
-
 
 
 def check_valid_exchanges(exchange_price_pairs: list[tuple]):
@@ -34,12 +34,41 @@ def get_exchange_id(name: str) -> int:
     cursor = CONN.cursor()
     cursor.execute("SELECT id FROM Exchanges WHERE name=?", (name,))
     result = cursor.fetchone()
-    return result["id"] 
+    return result["id"]
 
-def get_security_id(name:str) -> int:
+
+def get_security_id(name: str) -> int:
     cursor = CONN.cursor()
-    cursor.execute("SELECT id from Securities WHERE name=?",(name,) )
+    cursor.execute("SELECT id from Securities WHERE name=?", (name,))
     result = cursor.fetchone()
     if not result:
         raise NotFoundError(f"commodity {name} not found")
-    return result["id"] 
+    return result["id"]
+
+
+def get_exchange_list() -> list[str]:
+    cursor = CONN.cursor()
+    cursor.execute("SELECT name from Exchanges")
+    result = cursor.fetchall()
+    exchange_list = [exchange["name"] for exchange in result]
+    return exchange_list
+
+
+def get_security_traded_in_exchange(name: str) -> dict[str:str]:
+    cursor = CONN.cursor()
+    cursor.execute(
+        """
+        SELECT Securities.name as security_name,Securities.type as security_type FROM Exchanges
+        INNER JOIN Prices ON Exchanges.id = Prices.exchange_id
+        INNER JOIN Securities ON Prices.security_id = Securities.id
+        WHERE Exchanges.name =?
+
+""",
+        (name,),
+    )
+    result = cursor.fetchall()
+    exchange_dict = defaultdict(list)
+
+    for row in result:
+        exchange_dict[row["security_type"]] = row["security_name"]
+    return exchange_dict
