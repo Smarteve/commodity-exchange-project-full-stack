@@ -1,0 +1,20 @@
+$ def with (exchange,asset_types)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Asset Type</title>
+</head>
+<body>
+    <h1>Select Asset Type for Exchange: $exchange</h1>
+    <form action="/select_asset" method="get">
+        <input type="hidden" name="exchange" value="$exchange">
+        <label for="asset_type">Choose an Asset Type:</label>
+        <select name="asset_type" id="asset_type">
+            $for asset_type in asset_types:
+                <option value="$asset_type">$asset_type</option>
+        </select>
+        <br><br>
+        <input type="submit" value="Select">
+    </form>
+</body>
+</html>

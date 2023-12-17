@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, date
 from collections import defaultdict
-from exceptions import DuplicateError, NotFoundError
+from common.exceptions import DuplicateError, NotFoundError
 
 
 DB_FILE = "exchange.db"
@@ -72,3 +72,31 @@ def get_security_traded_in_exchange(name: str) -> dict[str:str]:
     for row in result:
         exchange_dict[row["security_type"]] = row["security_name"]
     return exchange_dict
+
+
+def is_valid_username_password(username, password):
+    cursor = CONN.cursor()
+    cursor.execute(
+        "SELECT * FROM User WHERE username=? and password=?", (username, password)
+    )
+    user = cursor.fetchone()
+    if user:
+        return True
+    return False
+
+
+def is_valid_username(username):
+    cursor = CONN.cursor()
+    cursor.execute("SELECT* FROM User WHERE username=?", (username,))
+    user = cursor.fetchone()
+    if user:
+        return False
+    return True
+
+
+def add_user(username, password):
+    cursor = CONN.cursor()
+    cursor.execute(
+        "INSERT INTO User(username,password) VALUES (?,?)", (username, password)
+    )
+    CONN.commit()

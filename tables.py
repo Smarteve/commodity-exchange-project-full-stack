@@ -60,6 +60,16 @@ def main():
     """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE User(
+        username TEXT PRIMARY KEY,
+        password TEXT
+        
+        )
+"""
+    )
+
 
 if __name__ == "__main__":
     main()
