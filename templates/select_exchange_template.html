@@ -1,4 +1,4 @@
-$ def with (exchange_list)
+$def with (exchange_list)
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,7 +9,7 @@ $ def with (exchange_list)
     <form action="/select_asset_type" method="get">
         <label for="exchange">Choose an Exchange:</label>
         <select name="exchange" id="exchange">
-            $for exchange in exchanges:
+            $for exchange in exchange_list:
                 <option value="$exchange">$exchange</option>
         </select>
         <br><br>

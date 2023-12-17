@@ -11,10 +11,12 @@ urls = (
     "/",
     "Login",
     "/createuser",
-    "CreateUser" "/selectexchange",
+    "CreateUser",
+    "/selectexchange",
     "SelectExchange",
     "/selectassettype",
-    "SelectAssetType" "/selectasset",
+    "SelectAssetType",
+    "/selectasset",
     "SelectAsset",
     "/addasset",
     "AddAsset",
@@ -31,10 +33,12 @@ session = web.session.Session(app, web.session.DiskStore("sessions"))
 class Login:
     def GET(self):
         form = forms.login_form()
-        return render.login_form(login_template)
+        return render.login_template(form)
 
     def POST(self):
         form = forms.login_form()
+        if not form.validates():
+            return render.login_template(form)
         i = form.d
         if is_valid_username_password(i.username, i.password):
             session.username = i.username
@@ -65,16 +69,19 @@ class CreateUser:
 class SelectExchange:
     def GET(self):
         exchange_list = get_exchange_list()
-        return render.select_exchange_html(exchange_list)
-    
+        return render.select_exchange_template(exchange_list)
+
+
 class SelectAssetType:
     def GET(self):
         data = web.input()
         exchange = data.exchange
-        asset_types = ["commodity","currency"]
+        asset_types = ["commodity", "currency"]
         return render.select_asset_type_template(exchange, asset_types)
+
+
 class SelectAsset:
-    
+    pass
 
 
 if __name__ == "__main__":

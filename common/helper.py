@@ -8,7 +8,7 @@ DB_FILE = "exchange.db"
 
 
 def get_db_connection(db_path=DB_FILE):
-    return sqlite3.connect(db_path)
+    return sqlite3.connect(db_path, check_same_thread=False)
 
 
 CONN = get_db_connection()
@@ -87,8 +87,9 @@ def is_valid_username_password(username, password):
 
 def is_valid_username(username):
     cursor = CONN.cursor()
-    cursor.execute("SELECT* FROM User WHERE username=?", (username,))
+    cursor.execute("SELECT * FROM User WHERE username=?", (username,))
     user = cursor.fetchone()
+
     if user:
         return False
     return True
