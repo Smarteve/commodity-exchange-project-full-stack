@@ -1,0 +1,28 @@
+$def with (form)
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Add Commodity</title>
+</head>
+<body>
+    <h1>Add New Commodity</h1>
+
+    <form action="" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <br><br>
+
+        <label for="unit">Unit:</label>
+        <input type="text" id="unit" name="unit" required>
+        <br><br>
+
+        <label for="exchange_price_time_pairs">Trading Info:</label>
+        <input type="text" id="exchange_price_time_pairs" name="exchange_price_time_pairs" required>
+        <small>Enter trading info in the order of exchange, price, and time (yyyy-mm-dd). If multiple trading info, separate by ';'</small>
+        <br><br>
+
+        <input type="submit" value="Add Commodity">
+    </form>
+</body>
+</html>

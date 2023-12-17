@@ -8,7 +8,7 @@ DB_FILE = "exchange.db"
 
 
 def get_db_connection(db_path=DB_FILE):
-    return sqlite3.connect(db_path)
+    return sqlite3.connect(db_path,check_same_thread=False)
 
 
 CONN = get_db_connection()
@@ -46,15 +46,14 @@ def add_prices(security_id, exchange_price_pairs: list[tuple]) -> None:
     cursor = CONN.cursor()
     for exchange, price, time in exchange_price_pairs:
         exchange_id = helper.get_exchange_id(exchange)
-        time_object = datetime.strptime(time, "%Y-%m-%d").date()
         cursor.execute(
             "INSERT INTO PRICES(security_id,exchange_id,price,time) VALUES(?,?,?,?)",
-            (security_id, exchange_id, price, time_object),
+            (security_id, exchange_id, price, time),
         )
     CONN.commit()
 
 
-def add_commodity(name: str, unit: str, exchange_price_time_pairs: list[tuple]) -> None:
+def add_commodity(name: str, unit: str, exchange_price_time_pairs: list[str]) -> None:
     helper.check_valid_exchanges(exchange_price_time_pairs)
     cursor = CONN.cursor()
     try:
@@ -71,7 +70,7 @@ def add_commodity(name: str, unit: str, exchange_price_time_pairs: list[tuple]) 
     CONN.commit()
 
 
-def view_commodity(name: str) -> sqlite3.Row:
+def view_commodity(name: str) -> list[str]:
     cursor = (
         CONN.cursor()
     )  # using alias given there are two names in two tables,otherwise one name will overwrite the other
@@ -86,8 +85,22 @@ def view_commodity(name: str) -> sqlite3.Row:
     """,
         (name,),
     )
-    result = cursor.fetchall()
-    return result
+    result = cursor.fetchall() #row object result
+    #parsing row object 
+    price_info = []
+    info = []
+    for subset in result:
+        unit = subset["unit"]
+        exchange_name = subset['exchange_name']
+        price = subset["price"]
+        time = subset["time"]
+        currency_sign = subset["currency_sign"]
+        price_info.append((exchange_name,price,time,currency_sign))
+    info.append(f"the trading info for {name}is: ")
+    for exchange_name,price,time,currency_sign in price_info:
+        info.append(f"{exchange_name}: {currency_sign}{price} per {unit} at {time}")
+
+    return info
 
 
 def delete_commodity(name: str) -> None:
@@ -126,11 +139,11 @@ def add_currency(
     CONN.commit()
 
 
-def view_currency(name: str) -> sqlite3.Row:
+def view_currency(name: str) -> list[str]:
     cursor = CONN.cursor()
     cursor.execute(
         """
-        SELECT Currencies.type as currency_type,tenor,settlement_dates,Exchanges.name as exchange_name,price,time FROM Securities
+        SELECT Currencies.type as currency_type,tenor,settlement_dates,Exchanges.name as exchange_name,price,time,currency_sign FROM Securities
         INNER JOIN Currencies ON Securities.id = Currencies.id 
         INNER JOIN Prices ON Securities.id = Prices.security_id
         INNER JOIN Exchanges ON Prices.exchange_id = Exchanges.id
@@ -139,7 +152,24 @@ def view_currency(name: str) -> sqlite3.Row:
         (name,),
     )
     result = cursor.fetchall()
-    return result
+
+    price_info = []
+    info = []
+    for subset in result:
+        tenor = subset["tenor"]
+        settlement_dates = subset["settlement_dates"]
+        currency_type = subset["currency_type"]
+        exchange_name = subset['exchange_name']
+        price = subset["price"]
+        time = subset["time"]
+        currency_sign = subset["currency_sign"]
+        price_info.append((exchange_name,price,time,currency_sign))
+    
+    info.append(f"{name} is a {currency_type}, it has a tenor of {tenor}, its settlement date is {settlement_dates}") 
+    info.append("it's trading info is")
+    for exchange_name,price,time,currency_sign in price_info:
+        info.append(f"{exchange_name}: {currency_sign}{price} at {time}")
+    return info
 
 
 def delete_currency(name: str) -> None:

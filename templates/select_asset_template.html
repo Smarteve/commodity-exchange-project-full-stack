@@ -1,0 +1,25 @@
+$def with (securities_list, asset_type)
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Asset</title>
+</head>
+<body>
+    <h1>Select a Security</h1>
+
+    <form action="/viewasset" method="get">
+  
+        <input type="hidden" name="asset_type" value="$asset_type">
+
+        <label for="security">Choose a Security:</label>
+        <select name="security" id="security">
+            <option value="">Select a Security</option>
+            $for security in securities_list:
+                <option value="$security">$security</option>
+        </select>
+        <br><br>
+        <input type="submit" value="View Asset">
+    </form>
+</body>
+</html>

@@ -70,7 +70,7 @@ def get_security_traded_in_exchange(name: str) -> dict[str:str]:
     exchange_dict = defaultdict(list)
 
     for row in result:
-        exchange_dict[row["security_type"]] = row["security_name"]
+        exchange_dict[row["security_type"]].append(row["security_name"])
     return exchange_dict
 
 
